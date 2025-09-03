@@ -20,28 +20,50 @@ interface ImagePanelProps {
     children?: React.ReactNode;
 }
 
-const ImagePanel: React.FC<ImagePanelProps> = ({ src, isLoading = false, children }) => (
-    <div className="bg-slate-800 rounded-lg aspect-square flex justify-center items-center p-4 transition-all duration-300">
-        {isLoading ? (
-            <LoadingSpinner />
-        ) : src ? (
-            <img src={src} alt="User content" className="max-w-full max-h-full object-contain rounded-md" />
-        ) : (
-            children
-        )}
-    </div>
-);
+const ImagePanel: React.FC<ImagePanelProps> = ({ src, isLoading = false, children }) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    useEffect(() => {
+        if (src) {
+            const img = new Image();
+            img.src = src;
+            img.onload = () => setIsLoaded(true);
+        } else {
+            setIsLoaded(false);
+        }
+    }, [src]);
+
+    return (
+        <div className="bg-slate-800 rounded-lg aspect-square flex justify-center items-center p-4 transition-all duration-300">
+            {isLoading ? (
+                <LoadingSpinner />
+            ) : src ? (
+                <img 
+                    src={src} 
+                    alt="User content" 
+                    className={`max-w-full max-h-full object-contain rounded-md transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                />
+            ) : (
+                children
+            )}
+        </div>
+    );
+};
 
 
 // Main App Component
 const App: React.FC = () => {
     const [originalImage, setOriginalImage] = useState<string | null>(null);
-    const [processedImage, setProcessedImage] = useState<string | null>(null);
+    const [processedImageURL, setProcessedImageURL] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        document.title = 'Heroic Duotone Photo Editor';
+    }, []);
 
     const applyDuotoneFilter = useCallback((img: HTMLImageElement) => {
         const canvas = canvasRef.current;
@@ -87,7 +109,7 @@ const App: React.FC = () => {
         }
 
         ctx.putImageData(imageData, 0, 0);
-        setProcessedImage(canvas.toDataURL('image/png'));
+        setProcessedImageURL(canvas.toDataURL('image/png'));
         setIsLoading(false);
     }, []);
 
@@ -95,7 +117,7 @@ const App: React.FC = () => {
         if (!originalImage) return;
 
         setIsLoading(true);
-        setProcessedImage(null);
+        setProcessedImageURL(null);
         setError(null);
 
         const img = new Image();
@@ -137,6 +159,16 @@ const App: React.FC = () => {
         e.stopPropagation();
         setIsDragging(false);
         handleFileChange(e.dataTransfer.files);
+    };
+
+    const handleReset = () => {
+        setOriginalImage(null);
+        setProcessedImageURL(null);
+        setError(null);
+        setIsLoading(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     const UploadBox = () => (
@@ -187,27 +219,40 @@ const App: React.FC = () => {
                 <section className="flex flex-col gap-4">
                     <h2 className="text-2xl font-semibold text-slate-300 text-center">Original Photo</h2>
                     <ImagePanel src={originalImage}>
-                       <UploadBox />
+                       {originalImage ? null : <UploadBox />}
                     </ImagePanel>
                 </section>
                 <section className="flex flex-col gap-4">
                     <h2 className="text-2xl font-semibold text-slate-300 text-center">Heroic Version</h2>
-                    <ImagePanel src={processedImage} isLoading={isLoading}>
+                    <ImagePanel src={processedImageURL} isLoading={isLoading}>
                         <div className="text-slate-500 text-center">
                             <p>Your processed image will appear here.</p>
                         </div>
                     </ImagePanel>
-                    {processedImage && (
-                         <a
-                            href={processedImage}
-                            download="heroic-photo.png"
-                            className="bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-4 rounded-lg w-full text-center transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-pink-500"
-                        >
-                            Download Image
-                        </a>
+                    {processedImageURL && (
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <a
+                                href={processedImageURL}
+                                download="heroic-photo.png"
+                                className="bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-4 rounded-lg w-full text-center transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-pink-500 transform hover:scale-105"
+                            >
+                                Download Image
+                            </a>
+                            <button
+                                onClick={handleReset}
+                                className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg w-full text-center transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-slate-500 transform hover:scale-105"
+                            >
+                                Convert Another
+                            </button>
+                        </div>
                     )}
                 </section>
             </main>
+            <footer className="w-full max-w-5xl text-center mt-8">
+                <p className="text-slate-500 text-sm">
+                    Made by <a href="https://github.com/dhiwarya" target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:underline">Dhiwa Kusumah</a>
+                </p>
+            </footer>
         </div>
     );
 };
