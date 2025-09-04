@@ -91,9 +91,9 @@ const App: React.FC = () => {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
 
-        // Colors: Hero Green (dark) and Brave Pink (light)
-        const darkColor = { r: 0, g: 77, b: 0 }; 
-        const lightColor = { r: 255, g: 0, b: 255 };
+        // Colors: Hero Green (dark) and Pink (light)
+        const darkColor = { r: 27, g: 96, b: 47 };
+        const lightColor = { r: 247, g: 132, b: 197 };
 
         for (let i = 0; i < data.length; i += 4) {
             const r = data[i];
@@ -101,7 +101,11 @@ const App: React.FC = () => {
             const b = data[i + 2];
             
             const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-            const normalizedGray = gray / 255;
+            
+            // Adjust exposure to be lighter (gamma correction)
+            const gamma = 0.9;
+            const correctedGray = 255 * Math.pow(gray / 255, 1 / gamma);
+            const normalizedGray = correctedGray / 255;
 
             data[i] = darkColor.r + (lightColor.r - darkColor.r) * normalizedGray;
             data[i + 1] = darkColor.g + (lightColor.g - darkColor.g) * normalizedGray;
@@ -204,7 +208,7 @@ const App: React.FC = () => {
                     Heroic <span className="text-pink-500">Duotone</span> Photo Editor
                 </h1>
                 <p className="text-slate-400 mt-2 text-lg">
-                    Transform your photos with a brave pink and green heroic effect.
+                    Transform your photos with a heroic duotone effect to become the giga chad we need.
                 </p>
             </header>
 
